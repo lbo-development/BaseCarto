@@ -10,7 +10,7 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/health", async (req, res) => {
+/*app.get("/api/health", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
     res.json({
@@ -25,7 +25,10 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
-
+*/
+app.get("/api/health", (req, res) => {
+  res.json({ message: "API OK sans DB" });
+});
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
