@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 // Remplace ce composant par ta vraie carte Leaflet si besoin
 function ChangeView({ center, zoom }) {
