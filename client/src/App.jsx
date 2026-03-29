@@ -109,8 +109,8 @@ function ToolsContent({
             </option>
           ) : (
             sites.map((site) => (
-              <option key={site.id} value={String(site.id)}>
-                {site.nom_site}
+              <option key={site.id_site} value={String(site.id_site)}>
+                {site.lib_site}
               </option>
             ))
           )}
@@ -123,10 +123,11 @@ function ToolsContent({
         {selectedSite && (
           <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
             <p className="font-medium text-slate-800">
-              {selectedSite.nom_site}
+              {selectedSite.lib_site}
             </p>
             <p>Latitude : {selectedSite.latitude}</p>
             <p>Longitude : {selectedSite.longitude}</p>
+            <p>Zoom : {selectedSite.zoom}</p>
           </div>
         )}
       </div>
@@ -191,18 +192,17 @@ function MapCenterUpdater({ site }) {
 
     const lat = Number(site.latitude);
     const lng = Number(site.longitude);
+    const zoom = Number(site.zoom ?? 13);
 
     if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-    map.setView([lat, lng], 13, { animate: true });
+    map.setView([lat, lng], zoom, { animate: true });
   }, [site, map]);
 
   return null;
 }
 
 export default function App() {
-  const defaultPosition = [43.2965, 5.3698];
-
   const [menuOpen, setMenuOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(false);
 
@@ -227,7 +227,7 @@ export default function App() {
         setSites(data);
 
         if (data.length > 0) {
-          setSelectedSiteId(String(data[0].id));
+          setSelectedSiteId(String(data[0].id_site));
         }
       } catch (error) {
         setSitesError(error.message || "Erreur lors du chargement des sites");
@@ -241,13 +241,10 @@ export default function App() {
 
   const selectedSite = useMemo(() => {
     return (
-      sites.find((site) => String(site.id) === String(selectedSiteId)) || null
+      sites.find((site) => String(site.id_site) === String(selectedSiteId)) ||
+      null
     );
   }, [sites, selectedSiteId]);
-
-  const mapPosition = selectedSite
-    ? [Number(selectedSite.latitude), Number(selectedSite.longitude)]
-    : defaultPosition;
 
   return (
     <div className="h-screen w-screen bg-slate-100 p-2 sm:p-4">
@@ -338,8 +335,8 @@ export default function App() {
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">
                   {selectedSite
-                    ? selectedSite.nom_site
-                    : "Marseille - Vue générale"}
+                    ? selectedSite.lib_site
+                    : "Chargement du site..."}
                 </p>
               </div>
 
@@ -348,7 +345,7 @@ export default function App() {
                   className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-lg transition hover:bg-slate-50"
                   onClick={() => {
                     if (!selectedSite) return;
-                    setSelectedSiteId(String(selectedSite.id));
+                    setSelectedSiteId(String(selectedSite.id_site));
                   }}
                 >
                   Centrer
@@ -359,28 +356,37 @@ export default function App() {
               </div>
             </div>
 
-            <MapContainer
-              style={{ zIndex: 0 }}
-              center={mapPosition}
-              zoom={13}
-              scrollWheelZoom={true}
-              zoomControl={false}
-              className="h-full w-full"
-            >
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-
-              <ZoomControl position="bottomright" />
-              <MapCenterUpdater site={selectedSite} />
-
-              <Marker position={mapPosition}>
-                <Popup>
-                  {selectedSite ? selectedSite.nom_site : "Marseille"}
-                </Popup>
-              </Marker>
-            </MapContainer>
+            {selectedSite ? (
+              <MapContainer
+                center={[
+                  Number(selectedSite.latitude),
+                  Number(selectedSite.longitude),
+                ]}
+                zoom={Number(selectedSite.zoom ?? 13)}
+                scrollWheelZoom={true}
+                zoomControl={false}
+                className="h-full w-full"
+              >
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <ZoomControl position="bottomright" />
+                <MapCenterUpdater site={selectedSite} />
+                <Marker
+                  position={[
+                    Number(selectedSite.latitude),
+                    Number(selectedSite.longitude),
+                  ]}
+                >
+                  <Popup>{selectedSite.lib_site}</Popup>
+                </Marker>
+              </MapContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-slate-500">
+                Chargement de la carte...
+              </div>
+            )}
           </main>
 
           <aside className="hidden w-[320px] shrink-0 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm lg:block">
