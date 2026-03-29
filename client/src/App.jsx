@@ -42,16 +42,17 @@ export default function App() {
 
         const response = await fetch("/api/sites");
         if (!response.ok) {
-          throw new Error(`Erreur API : ${response.status}`);
+          throw new Error("Erreur API : " + response.status);
         }
 
         const data = await response.json();
         const normalizedSites = Array.isArray(data) ? data : [];
+
         setSites(normalizedSites);
 
-        if (normalizedSites.length > 0 && !selectedSite) {
+        if (normalizedSites.length > 0) {
           const firstId = String(
-            normalizedSites[0].id ?? normalizedSites[0].ID ?? ""
+            normalizedSites[0]?.id ?? normalizedSites[0]?.ID ?? ""
           );
           setSelectedSite(firstId);
         }
