@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <style>
+      .wall { fill: #f8f8f8; stroke: #222; stroke-width: 8; }
+      .room { fill: #dfefff; stroke: #3a6ea5; stroke-width: 3; }
+      .corridor { fill: #f3f3f3; stroke: #666; stroke-width: 2; }
+      .door { stroke: #8b5e3c; stroke-width: 6; fill: none; }
+      .label { font-family: Arial, sans-serif; font-size: 28px; fill: #111; }
+      .small { font-size: 20px; fill: #444; }
+    </style>
+  </defs>
+
+  <rect x="20" y="20" width="1160" height="760" class="wall" rx="8"/>
+  <rect id="corridor" x="470" y="40" width="260" height="720" class="corridor"/>
+
+  <rect id="room-accueil" x="50" y="50" width="390" height="180" class="room"/>
+  <text x="165" y="145" class="label">Accueil</text>
+
+  <rect id="room-bureau-a" x="50" y="260" width="390" height="210" class="room"/>
+  <text x="145" y="360" class="label">Bureau A</text>
+
+  <rect id="room-bureau-b" x="50" y="500" width="390" height="230" class="room"/>
+  <text x="145" y="620" class="label">Bureau B</text>
+
+  <rect id="room-salle-reunion" x="760" y="50" width="390" height="280" class="room"/>
+  <text x="835" y="185" class="label">Salle réunion</text>
+
+  <rect id="room-local-tech" x="760" y="360" width="180" height="170" class="room"/>
+  <text x="795" y="450" class="small">Local tech.</text>
+
+  <rect id="room-open-space" x="970" y="360" width="180" height="170" class="room"/>
+  <text x="1000" y="450" class="small">Open space</text>
+
+  <rect id="room-sanitaires" x="760" y="560" width="180" height="170" class="room"/>
+  <text x="795" y="650" class="small">Sanitaires</text>
+
+  <rect id="room-cuisine" x="970" y="560" width="180" height="170" class="room"/>
+  <text x="1020" y="650" class="small">Cuisine</text>
+
+  <path d="M440 140 H470" class="door"/>
+  <path d="M440 360 H470" class="door"/>
+  <path d="M440 620 H470" class="door"/>
+  <path d="M730 190 H760" class="door"/>
+  <path d="M730 445 H760" class="door"/>
+  <path d="M730 645 H760" class="door"/>
+</svg>
