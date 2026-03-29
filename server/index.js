@@ -25,6 +25,29 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
+
+app.get("/api/sites", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id_site,
+        lib_site,
+        latitude,
+        longitude,
+        zoom
+      FROM db_sites
+      ORDER BY ordre ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({
+      message: "Erreur récupération des sites",
+      error: error.message,
+    });
+  }
+});
+
 /*
 app.get("/api/health", (req, res) => {
   res.json({ message: "API OK sans DB" });

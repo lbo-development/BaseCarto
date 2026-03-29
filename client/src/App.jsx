@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   ZoomControl,
+  useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -19,6 +20,8 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function MenuContent() {
   const items = [
@@ -68,7 +71,14 @@ function MenuContent() {
   );
 }
 
-function ToolsContent() {
+function ToolsContent({
+  sites,
+  selectedSiteId,
+  onSiteChange,
+  loadingSites,
+  sitesError,
+  selectedSite,
+}) {
   return (
     <div className="flex h-full flex-col gap-4">
       <div>
@@ -78,6 +88,47 @@ function ToolsContent() {
         <p className="text-sm text-slate-500">
           Recherche, filtres et affichage
         </p>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <label className="mb-2 block text-sm font-medium text-slate-700">
+          Sélection du site
+        </label>
+
+        <select
+          value={selectedSiteId}
+          onChange={(e) => onSiteChange(e.target.value)}
+          disabled={loadingSites || sites.length === 0}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+        >
+          {sites.length === 0 ? (
+            <option value="">
+              {loadingSites
+                ? "Chargement des sites..."
+                : "Aucun site disponible"}
+            </option>
+          ) : (
+            sites.map((site) => (
+              <option key={site.id} value={String(site.id)}>
+                {site.nom_site}
+              </option>
+            ))
+          )}
+        </select>
+
+        {sitesError && (
+          <p className="mt-2 text-xs text-red-600">{sitesError}</p>
+        )}
+
+        {selectedSite && (
+          <div className="mt-3 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
+            <p className="font-medium text-slate-800">
+              {selectedSite.nom_site}
+            </p>
+            <p>Latitude : {selectedSite.latitude}</p>
+            <p>Longitude : {selectedSite.longitude}</p>
+          </div>
+        )}
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
@@ -132,10 +183,71 @@ function ToolsContent() {
   );
 }
 
+function MapCenterUpdater({ site }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!site) return;
+
+    const lat = Number(site.latitude);
+    const lng = Number(site.longitude);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    map.setView([lat, lng], 13, { animate: true });
+  }, [site, map]);
+
+  return null;
+}
+
 export default function App() {
-  const position = [43.2965, 5.3698];
+  const defaultPosition = [43.2965, 5.3698];
+
   const [menuOpen, setMenuOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(false);
+
+  const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState("");
+  const [loadingSites, setLoadingSites] = useState(true);
+  const [sitesError, setSitesError] = useState("");
+
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        setLoadingSites(true);
+        setSitesError("");
+
+        const response = await fetch(`${API_URL}/api/sites`);
+
+        if (!response.ok) {
+          throw new Error("Impossible de charger les sites");
+        }
+
+        const data = await response.json();
+        setSites(data);
+
+        if (data.length > 0) {
+          setSelectedSiteId(String(data[0].id));
+        }
+      } catch (error) {
+        setSitesError(error.message || "Erreur lors du chargement des sites");
+      } finally {
+        setLoadingSites(false);
+      }
+    };
+
+    loadSites();
+  }, []);
+
+  const selectedSite = useMemo(() => {
+    return (
+      sites.find((site) => String(site.id) === String(selectedSiteId)) || null
+    );
+  }, [sites, selectedSiteId]);
+
+  const mapPosition = selectedSite
+    ? [Number(selectedSite.latitude), Number(selectedSite.longitude)]
+    : defaultPosition;
 
   return (
     <div className="h-screen w-screen bg-slate-100 p-2 sm:p-4">
@@ -225,12 +337,20 @@ export default function App() {
                   Zone active
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">
-                  Marseille - Vue générale
+                  {selectedSite
+                    ? selectedSite.nom_site
+                    : "Marseille - Vue générale"}
                 </p>
               </div>
 
               <div className="flex gap-2">
-                <button className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-lg transition hover:bg-slate-50">
+                <button
+                  className="rounded-2xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-lg transition hover:bg-slate-50"
+                  onClick={() => {
+                    if (!selectedSite) return;
+                    setSelectedSiteId(String(selectedSite.id));
+                  }}
+                >
                   Centrer
                 </button>
                 <button className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:opacity-95">
@@ -241,7 +361,7 @@ export default function App() {
 
             <MapContainer
               style={{ zIndex: 0 }}
-              center={position}
+              center={mapPosition}
               zoom={13}
               scrollWheelZoom={true}
               zoomControl={false}
@@ -251,15 +371,27 @@ export default function App() {
                 attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+
               <ZoomControl position="bottomright" />
-              <Marker position={position}>
-                <Popup>Marseille</Popup>
+              <MapCenterUpdater site={selectedSite} />
+
+              <Marker position={mapPosition}>
+                <Popup>
+                  {selectedSite ? selectedSite.nom_site : "Marseille"}
+                </Popup>
               </Marker>
             </MapContainer>
           </main>
 
           <aside className="hidden w-[320px] shrink-0 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm lg:block">
-            <ToolsContent />
+            <ToolsContent
+              sites={sites}
+              selectedSiteId={selectedSiteId}
+              onSiteChange={setSelectedSiteId}
+              loadingSites={loadingSites}
+              sitesError={sitesError}
+              selectedSite={selectedSite}
+            />
           </aside>
 
           {toolsOpen && (
@@ -279,7 +411,15 @@ export default function App() {
                     Fermer
                   </button>
                 </div>
-                <ToolsContent />
+
+                <ToolsContent
+                  sites={sites}
+                  selectedSiteId={selectedSiteId}
+                  onSiteChange={setSelectedSiteId}
+                  loadingSites={loadingSites}
+                  sitesError={sitesError}
+                  selectedSite={selectedSite}
+                />
               </aside>
             </>
           )}
