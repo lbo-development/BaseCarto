@@ -12,7 +12,7 @@ function MapView({ selectedSite, selectedSiteData }) {
             <>
               <p>
                 <strong>Site sélectionné :</strong>{" "}
-                {selectedSiteData?.nom || selectedSite}
+                {selectedSiteData?.lib_site || selectedSite}
               </p>
               {selectedSiteData?.description && (
                 <p>{selectedSiteData.description}</p>
@@ -59,8 +59,8 @@ export default function App() {
           setSelectedSite(firstId);
         }
       } catch (error) {
-        console.error("Erreur chargement des XXXsites :", error);
-        setErrorSites("Impossible de charger les XXXsites.");
+        console.error("Erreur chargement des sites :", error);
+        setErrorSites("Impossible de charger les sites.");
         setSites([]);
       } finally {
         setLoadingSites(false);
@@ -73,8 +73,7 @@ export default function App() {
   const selectedSiteData = useMemo(() => {
     return (
       sites.find(
-        (site) =>
-          String(site.id ?? site.ID ?? "") === String(selectedSite ?? "")
+        (site) => String(site.id_site ?? "") === String(selectedSite ?? "")
       ) || null
     );
   }, [sites, selectedSite]);
@@ -151,8 +150,8 @@ export default function App() {
                 <option value="">Aucun site disponible</option>
               ) : (
                 sites.map((site) => {
-                  const id = String(site.id ?? site.ID ?? "");
-                  const nom = site.nom ?? site.name ?? `Site ${id}`;
+                  const id = String(site.id_site ?? "");
+                  const nom = site.lib_site ?? "";
                   return (
                     <option key={id} value={id}>
                       {nom}
@@ -269,9 +268,7 @@ export default function App() {
 
         <div className="topBarRight">
           {selectedSiteData ? (
-            <span className="selectedChip">
-              {selectedSiteData.nom ?? selectedSiteData.name}
-            </span>
+            <span className="selectedChip">{selectedSiteData.lib_site}</span>
           ) : (
             <span className="selectedChip muted">Aucun site</span>
           )}
