@@ -1,60 +1,52 @@
-const express = require("express");
-const cors = require("cors");
-const { Pool } = require("pg");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import pkg from "pg";
+
+const { Pool } = pkg;
 
 const app = express();
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+
 app.use(cors());
 app.use(express.json());
 
+/* 🔥 CONNEXION POSTGRES ICI */
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+/* TEST DB */
 app.get("/api/health", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
-    res.json({
-      message: "API OK2",
-      database: "Connectée",
-      now: result.rows[0].now,
-    });
+    res.json({ ok: true, now: result.rows[0] });
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur base de données",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ ok: false, error: error.message });
   }
 });
 
+/* ROUTE SITES */
 app.get("/api/sites", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT
-        id_site,
-        lib_site,
-        latitude,
-        longitude,
-        zoom
+      SELECT id_site, lib_site, latitude, longitude, zoom
       FROM db_sites
-      ORDER BY ordre ASC
+      ORDER BY id_site
     `);
 
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({
-      message: "Erreur récupération des sites",
-      error: error.message,
-    });
+    console.error("ERREUR /api/sites :", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-/*
-app.get("/api/health", (req, res) => {
-  res.json({ message: "API OK sans DB" });
-});
-*/
+/* LANCEMENT SERVEUR */
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`Serveur lancé sur le port ${PORT}`);
+  console.log(`Serveur démarré sur le port ${PORT}`);
 });
