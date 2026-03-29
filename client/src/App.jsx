@@ -2,16 +2,32 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 
-// Remplace ce composant par ta vraie carte Leaflet si besoin
 function ChangeView({ center, zoom }) {
   const map = useMap();
-  map.setView(center, zoom);
+
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [map, center, zoom]);
+
   return null;
 }
 
-function MapView({ selectedSiteData }) {
+function ResizeMap({ isMenuOpen, isDesktop }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [map, isMenuOpen, isDesktop]);
+
+  return null;
+}
+
+function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
   const latitude = Number(selectedSiteData?.latitude);
   const longitude = Number(selectedSiteData?.longitude);
   const zoomValue = Number(selectedSiteData?.zoom);
@@ -23,7 +39,6 @@ function MapView({ selectedSiteData }) {
     longitude !== 0;
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
-
   const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
 
   return (
@@ -35,6 +50,7 @@ function MapView({ selectedSiteData }) {
         />
 
         <ChangeView center={center} zoom={zoom} />
+        <ResizeMap isMenuOpen={isMenuOpen} isDesktop={isDesktop} />
 
         {hasValidCoords && (
           <Marker position={[latitude, longitude]}>
@@ -47,11 +63,28 @@ function MapView({ selectedSiteData }) {
 }
 
 export default function App() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useState("");
   const [loadingSites, setLoadingSites] = useState(true);
   const [errorSites, setErrorSites] = useState("");
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+
+    const updateLayoutMode = (event) => {
+      const desktop = event.matches;
+      setIsDesktop(desktop);
+      setIsMenuOpen(desktop);
+    };
+
+    setIsDesktop(media.matches);
+    setIsMenuOpen(media.matches);
+
+    media.addEventListener("change", updateLayoutMode);
+    return () => media.removeEventListener("change", updateLayoutMode);
+  }, []);
 
   useEffect(() => {
     const loadSites = async () => {
@@ -72,9 +105,7 @@ export default function App() {
         setSites(normalizedSites);
 
         if (normalizedSites.length > 0) {
-          const firstId = String(
-            normalizedSites[0]?.id ?? normalizedSites[0]?.ID ?? ""
-          );
+          const firstId = String(normalizedSites[0]?.id_site ?? "");
           setSelectedSite(firstId);
         }
       } catch (error) {
@@ -101,7 +132,7 @@ export default function App() {
     const value = event.target.value;
     setSelectedSite(value);
 
-    if (window.innerWidth < 768) {
+    if (!isDesktop) {
       setIsMenuOpen(false);
     }
   };
@@ -109,18 +140,15 @@ export default function App() {
   const handleCenterOnSite = () => {
     if (!selectedSiteData) return;
     console.log("Centrer sur le site :", selectedSiteData);
-    // Ici tu pourras appeler ta logique Leaflet pour centrer la carte
   };
 
   const handleShowDocuments = () => {
     if (!selectedSiteData) return;
     console.log("Afficher documents du site :", selectedSiteData);
-    // Ici tu pourras ouvrir les documents liés au site
   };
 
   const handleShowLayers = () => {
     console.log("Afficher / masquer les couches");
-    // Ici tu pourras gérer les couches cartographiques
   };
 
   const menuContent = () => (
@@ -134,14 +162,16 @@ export default function App() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="iconButton"
-          onClick={() => setIsMenuOpen(false)}
-          aria-label="Fermer le menu"
-        >
-          ✕
-        </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            className="iconButton"
+            onClick={() => setIsMenuOpen(false)}
+            aria-label="Fermer le menu"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       <div className="menuScroll">
@@ -237,30 +267,38 @@ export default function App() {
             {selectedSiteData ? (
               <>
                 <div className="summaryTitle">
-                  {selectedSiteData.nom ?? selectedSiteData.name ?? "Site"}
+                  {selectedSiteData.lib_site ?? "Site"}
                 </div>
 
                 <div className="summaryGrid">
                   <div className="summaryItem">
                     <span className="summaryLabel">ID</span>
                     <span className="summaryValue">
-                      {selectedSiteData.id ?? selectedSiteData.ID ?? "-"}
+                      {selectedSiteData.id_site ?? "-"}
                     </span>
                   </div>
 
                   <div className="summaryItem">
-                    <span className="summaryLabel">Code</span>
+                    <span className="summaryLabel">Latitude</span>
                     <span className="summaryValue">
-                      {selectedSiteData.code ?? "-"}
+                      {selectedSiteData.latitude ?? "-"}
+                    </span>
+                  </div>
+
+                  <div className="summaryItem">
+                    <span className="summaryLabel">Longitude</span>
+                    <span className="summaryValue">
+                      {selectedSiteData.longitude ?? "-"}
+                    </span>
+                  </div>
+
+                  <div className="summaryItem">
+                    <span className="summaryLabel">Zoom</span>
+                    <span className="summaryValue">
+                      {selectedSiteData.zoom ?? "-"}
                     </span>
                   </div>
                 </div>
-
-                {selectedSiteData.description && (
-                  <p className="summaryDescription">
-                    {selectedSiteData.description}
-                  </p>
-                )}
               </>
             ) : (
               <div className="emptyState">Aucun site sélectionné.</div>
@@ -294,18 +332,28 @@ export default function App() {
         </div>
       </header>
 
-      <main className="appMain">
-        <MapView
-          selectedSite={selectedSite}
-          selectedSiteData={selectedSiteData}
-        />
-      </main>
+      <div className="contentShell">
+        <aside
+          className={[
+            "sideMenu",
+            isDesktop ? "desktopMenu" : "mobileMenu",
+            isMenuOpen ? "open" : "closed",
+          ].join(" ")}
+        >
+          {menuContent()}
+        </aside>
 
-      {isMenuOpen && (
-        <>
-          <div className="menuOverlay" onClick={() => setIsMenuOpen(false)} />
-          <aside className="sideMenu">{menuContent()}</aside>
-        </>
+        <main className="appMain">
+          <MapView
+            selectedSiteData={selectedSiteData}
+            isMenuOpen={isMenuOpen}
+            isDesktop={isDesktop}
+          />
+        </main>
+      </div>
+
+      {!isDesktop && isMenuOpen && (
+        <div className="menuOverlay" onClick={() => setIsMenuOpen(false)} />
       )}
     </div>
   );

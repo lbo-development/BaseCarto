@@ -21,8 +21,9 @@ select {
 .appShell {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  position: relative;
   background: #f4f7fb;
 }
 
@@ -30,7 +31,7 @@ select {
 
 .topBar {
   position: relative;
-  z-index: 10;
+  z-index: 30;
   height: 64px;
   display: grid;
   grid-template-columns: 56px 1fr auto;
@@ -87,11 +88,22 @@ select {
   line-height: 1;
 }
 
-/* MAIN */
+/* LAYOUT */
+
+.contentShell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
 
 .appMain {
-  width: 100%;
-  height: calc(100% - 64px);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .mapContainer {
@@ -105,6 +117,7 @@ select {
   height: 100%;
 }
 
+/* GARDE si tu utilises encore une carte factice */
 .mapPlaceholder {
   width: 100%;
   height: 100%;
@@ -137,41 +150,13 @@ select {
   line-height: 1.45;
 }
 
-/* OVERLAY + MENU */
-
-.menuOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(7, 14, 28, 0.38);
-  backdrop-filter: blur(3px);
-  z-index: 40;
-}
+/* MENU COMMUN */
 
 .sideMenu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 50;
-  width: 88%;
-  max-width: 360px;
-  height: 100%;
   background: #ffffff;
-  box-shadow: 10px 0 40px rgba(15, 23, 42, 0.20);
   display: flex;
   flex-direction: column;
-  animation: slideInLeft 0.24s ease;
-  border-top-right-radius: 22px;
-  border-bottom-right-radius: 22px;
   overflow: hidden;
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
 }
 
 .menuHeader {
@@ -414,12 +399,47 @@ select {
   color: #b42318;
 }
 
+/* MOBILE */
+
+.mobileMenu {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: min(88vw, 360px);
+  z-index: 40;
+  box-shadow: 12px 0 32px rgba(15, 23, 42, 0.18);
+  border-top-right-radius: 20px;
+  transform: translateX(-100%);
+  transition: transform 0.28s ease;
+}
+
+.mobileMenu.open {
+  transform: translateX(0);
+}
+
+.mobileMenu.closed {
+  transform: translateX(-100%);
+}
+
+.menuOverlay {
+  position: fixed;
+  inset: 64px 0 0 0;
+  background: rgba(7, 14, 28, 0.38);
+  backdrop-filter: blur(2px);
+  z-index: 35;
+}
+
 /* DESKTOP */
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
+  .hamburgerButton {
+    display: none;
+  }
+
   .topBar {
-    grid-template-columns: 56px 1fr auto;
-    padding: 0 16px;
+    grid-template-columns: 1fr auto;
+    padding: 0 20px;
   }
 
   .topBarTitle {
@@ -430,8 +450,33 @@ select {
     max-width: 260px;
   }
 
-  .sideMenu {
+  .desktopMenu {
+    position: relative;
     width: 360px;
+    min-width: 360px;
+    max-width: 360px;
+    height: 100%;
+    z-index: 2;
+    border-right: 1px solid #e7edf5;
+    box-shadow: 8px 0 24px rgba(15, 23, 42, 0.05);
+    transform: translateX(0);
+    transition:
+      width 0.28s ease,
+      min-width 0.28s ease,
+      max-width 0.28s ease;
+  }
+
+  .desktopMenu.closed {
+    width: 0;
+    min-width: 0;
+    max-width: 0;
+    border-right: none;
+    box-shadow: none;
+  }
+
+  .desktopMenu.closed .menuHeader,
+  .desktopMenu.closed .menuScroll {
+    display: none;
   }
 
   .mapPlaceholder {
