@@ -41,14 +41,12 @@ export default function App() {
         setErrorSites("");
 
         const response = await fetch("/api/sites");
-
         if (!response.ok) {
           throw new Error(`Erreur API : ${response.status}`);
         }
 
         const data = await response.json();
         const normalizedSites = Array.isArray(data) ? data : [];
-
         setSites(normalizedSites);
 
         if (normalizedSites.length > 0 && !selectedSite) {
