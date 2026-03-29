@@ -40,7 +40,9 @@ export default function App() {
         setLoadingSites(true);
         setErrorSites("");
 
-        const response = await fetch("/api/sites");
+        const apiUrl = import.meta.env.VITE_API_URL || "";
+        const response = await fetch(`${apiUrl}/api/sites`);
+
         if (!response.ok) {
           throw new Error("Erreur API : " + response.status);
         }
