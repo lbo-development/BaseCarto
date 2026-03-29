@@ -57,8 +57,8 @@ export default function App() {
           setSelectedSite(firstId);
         }
       } catch (error) {
-        console.error("Erreur chargement des sites :", error);
-        setErrorSites("Impossible de charger les sites.");
+        console.error("Erreur chargement des XXXsites :", error);
+        setErrorSites("Impossible de charger les XXXsites.");
         setSites([]);
       } finally {
         setLoadingSites(false);
