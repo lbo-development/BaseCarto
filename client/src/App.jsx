@@ -2,27 +2,43 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
 // Remplace ce composant par ta vraie carte Leaflet si besoin
-function MapView({ selectedSite, selectedSiteData }) {
+function ChangeView({ center, zoom }) {
+  const map = useMap();
+  map.setView(center, zoom);
+  return null;
+}
+
+function MapView({ selectedSiteData }) {
+  const latitude = Number(selectedSiteData?.latitude);
+  const longitude = Number(selectedSiteData?.longitude);
+  const zoomValue = Number(selectedSiteData?.zoom);
+
+  const hasValidCoords =
+    !Number.isNaN(latitude) &&
+    !Number.isNaN(longitude) &&
+    latitude !== 0 &&
+    longitude !== 0;
+
+  const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
+
+  const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
+
   return (
     <div className="mapContainer">
-      <div className="mapPlaceholder">
-        <div className="mapCard">
-          <h2>Carte</h2>
-          {selectedSite ? (
-            <>
-              <p>
-                <strong>Site sélectionné :</strong>{" "}
-                {selectedSiteData?.lib_site || selectedSite}
-              </p>
-              {selectedSiteData?.description && (
-                <p>{selectedSiteData.description}</p>
-              )}
-            </>
-          ) : (
-            <p>Aucun site sélectionné</p>
-          )}
-        </div>
-      </div>
+      <MapContainer center={center} zoom={zoom} className="leafletMap">
+        <TileLayer
+          attribution="&copy; OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <ChangeView center={center} zoom={zoom} />
+
+        {hasValidCoords && (
+          <Marker position={[latitude, longitude]}>
+            <Popup>{selectedSiteData?.lib_site ?? "Site sélectionné"}</Popup>
+          </Marker>
+        )}
+      </MapContainer>
     </div>
   );
 }
