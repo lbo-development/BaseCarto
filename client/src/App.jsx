@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import {
   MapContainer,
@@ -28,31 +28,10 @@ function FixMapSizeOnLoad() {
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [map]);
-
-  return null;
-}
-
-function RecenterMapOnSiteChange({ center, zoom, siteId }) {
-  const map = useMap();
-  const previousSiteId = useRef(null);
-
-  useEffect(() => {
-    if (!siteId) return;
-
-    if (previousSiteId.current !== siteId) {
-      const timer = setTimeout(() => {
-        map.invalidateSize();
-        map.setView(center, zoom, { animate: false });
-      }, 150);
-
-      previousSiteId.current = siteId;
-      return () => clearTimeout(timer);
-    }
-  }, [map, center, zoom, siteId]);
 
   return null;
 }
@@ -80,7 +59,7 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
           console.error("Erreur fitBounds :", error);
         }
       }
-    }, 100);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [map, isMenuOpen, isDesktop, openedPlan]);
@@ -107,7 +86,7 @@ function MapView({
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
   const zoom = Number.isFinite(zoomValue) && zoomValue > 0 ? zoomValue : 12;
-  const siteId = String(selectedSiteData?.id_site ?? "");
+  const siteId = String(selectedSiteData?.id_site ?? "default");
 
   const tileConfig =
     baseLayer === "satellite"
@@ -155,16 +134,22 @@ function MapView({
       </div>
 
       <MapContainer
+        key={`${siteId}-${baseLayer}`}
         center={center}
         zoom={zoom}
         minZoom={3}
         maxZoom={19}
         className="leafletMap"
+        whenReady={(event) => {
+          setTimeout(() => {
+            event.target.invalidateSize();
+            event.target.setView(center, zoom, { animate: false });
+          }, 150);
+        }}
       >
         <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
 
         <FixMapSizeOnLoad />
-        <RecenterMapOnSiteChange center={center} zoom={zoom} siteId={siteId} />
         <ResizeMap
           isMenuOpen={isMenuOpen}
           isDesktop={isDesktop}
@@ -191,8 +176,8 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
 
   const hasValidPlan =
     selectedPlanData?.fichier_plan &&
-    !Number.isNaN(width) &&
-    !Number.isNaN(height) &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
     width > 0 &&
     height > 0;
 
@@ -232,6 +217,7 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
 
       <div className="mapContainer">
         <MapContainer
+          key={String(selectedPlanData?.id_plan ?? "plan")}
           crs={L.CRS.Simple}
           bounds={bounds}
           minZoom={minZoom}
@@ -239,6 +225,12 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
           zoom={minZoom}
           className="leafletMap"
           style={{ background: "#f1f5f9" }}
+          whenReady={(event) => {
+            setTimeout(() => {
+              event.target.invalidateSize();
+              event.target.fitBounds(bounds, { padding: [20, 20] });
+            }, 150);
+          }}
         >
           <ImageOverlay url={imageUrl} bounds={bounds} />
           <ResizeMap
@@ -395,6 +387,7 @@ export default function App() {
   const handleCenterOnSite = () => {
     if (!selectedSiteData) return;
     setOpenedPlan(null);
+    setSelectedSite(String(selectedSiteData.id_site));
   };
 
   const handleShowDocuments = () => {
