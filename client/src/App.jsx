@@ -38,6 +38,7 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
+
       if (openedPlan && map.fitBounds) {
         try {
           map.fitBounds(
@@ -233,6 +234,8 @@ export default function App() {
   const [errorPlans, setErrorPlans] = useState("");
   const [openedPlan, setOpenedPlan] = useState(null);
 
+  const [baseLayer, setBaseLayer] = useState("map");
+
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
 
@@ -348,8 +351,7 @@ export default function App() {
   }, [plans, selectedPlan]);
 
   const handleSelectSite = (event) => {
-    const value = event.target.value;
-    setSelectedSite(value);
+    setSelectedSite(event.target.value);
   };
 
   const handleSelectPlan = (event) => {
@@ -645,6 +647,8 @@ export default function App() {
               selectedSiteData={selectedSiteData}
               isMenuOpen={isMenuOpen}
               isDesktop={isDesktop}
+              baseLayer={baseLayer}
+              setBaseLayer={setBaseLayer}
             />
           )}
         </main>
