@@ -158,7 +158,7 @@ function MapView({
 
         {hasValidCoords && (
           <Marker position={[latitude, longitude]}>
-            <Popup>{selectedSiteData?.lib_site ?? "Site sélectionné"}</Popup>
+            <Popup>{selectedSiteData?.zoom ?? "Site sélectionné"}</Popup>
           </Marker>
         )}
       </MapContainer>
