@@ -77,10 +77,16 @@ function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useState("");
   const [loadingSites, setLoadingSites] = useState(true);
   const [errorSites, setErrorSites] = useState("");
+
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [errorPlans, setErrorPlans] = useState("");
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -119,11 +125,14 @@ export default function App() {
         if (normalizedSites.length > 0) {
           const firstId = String(normalizedSites[0]?.id_site ?? "");
           setSelectedSite(firstId);
+        } else {
+          setSelectedSite("");
         }
       } catch (error) {
         console.error("Erreur chargement des sites :", error);
         setErrorSites("Impossible de charger les sites.");
         setSites([]);
+        setSelectedSite("");
       } finally {
         setLoadingSites(false);
       }
@@ -131,6 +140,53 @@ export default function App() {
 
     loadSites();
   }, []);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      if (!selectedSite) {
+        setPlans([]);
+        setSelectedPlan("");
+        setErrorPlans("");
+        setLoadingPlans(false);
+        return;
+      }
+
+      try {
+        setLoadingPlans(true);
+        setErrorPlans("");
+        setPlans([]);
+        setSelectedPlan("");
+
+        const apiUrl = import.meta.env.VITE_API_URL || "";
+        const response = await fetch(
+          `${apiUrl}/api/plans?siteId=${encodeURIComponent(selectedSite)}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Erreur API : " + response.status);
+        }
+
+        const data = await response.json();
+        const normalizedPlans = Array.isArray(data) ? data : [];
+
+        setPlans(normalizedPlans);
+
+        if (normalizedPlans.length > 0) {
+          const firstPlanId = String(normalizedPlans[0]?.id_plan ?? "");
+          setSelectedPlan(firstPlanId);
+        }
+      } catch (error) {
+        console.error("Erreur chargement des plans :", error);
+        setErrorPlans("Impossible de charger les plans du site.");
+        setPlans([]);
+        setSelectedPlan("");
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+  }, [selectedSite]);
 
   const selectedSiteData = useMemo(() => {
     return (
@@ -140,6 +196,14 @@ export default function App() {
     );
   }, [sites, selectedSite]);
 
+  const selectedPlanData = useMemo(() => {
+    return (
+      plans.find(
+        (plan) => String(plan.id_plan ?? "") === String(selectedPlan ?? "")
+      ) || null
+    );
+  }, [plans, selectedPlan]);
+
   const handleSelectSite = (event) => {
     const value = event.target.value;
     setSelectedSite(value);
@@ -147,6 +211,10 @@ export default function App() {
     if (!isDesktop) {
       setIsMenuOpen(false);
     }
+  };
+
+  const handleSelectPlan = (event) => {
+    setSelectedPlan(event.target.value);
   };
 
   const handleCenterOnSite = () => {
@@ -161,6 +229,11 @@ export default function App() {
 
   const handleShowLayers = () => {
     console.log("Afficher / masquer les couches");
+  };
+
+  const handleOpenPlan = () => {
+    if (!selectedPlanData) return;
+    console.log("Ouvrir le plan :", selectedPlanData);
   };
 
   const menuContent = () => (
@@ -221,6 +294,74 @@ export default function App() {
                 })
               )}
             </select>
+          )}
+        </section>
+
+        <section className="menuSection">
+          <div className="sectionTop">
+            <span className="sectionBadge">Plans</span>
+          </div>
+
+          <label htmlFor="plan-select" className="sectionLabel">
+            Choisir un plan
+          </label>
+
+          {!selectedSite ? (
+            <div className="infoBox">Sélectionne d'abord un site.</div>
+          ) : loadingPlans ? (
+            <div className="infoBox">Chargement des plans...</div>
+          ) : errorPlans ? (
+            <div className="infoBox error">{errorPlans}</div>
+          ) : (
+            <select
+              id="plan-select"
+              value={selectedPlan}
+              onChange={handleSelectPlan}
+              className="menuSelect"
+              disabled={plans.length === 0}
+            >
+              {plans.length === 0 ? (
+                <option value="">Aucun plan disponible</option>
+              ) : (
+                plans.map((plan) => {
+                  const id = String(plan.id_plan ?? "");
+                  const nom =
+                    plan.lib_plan ??
+                    plan.nom_plan ??
+                    plan.titre_plan ??
+                    `Plan ${id}`;
+
+                  return (
+                    <option key={id} value={id}>
+                      {nom}
+                    </option>
+                  );
+                })
+              )}
+            </select>
+          )}
+
+          {selectedPlanData && (
+            <div className="linkedInfoCard">
+              <div className="linkedInfoTitle">
+                {selectedPlanData.lib_plan ??
+                  selectedPlanData.nom_plan ??
+                  selectedPlanData.titre_plan ??
+                  "Plan sélectionné"}
+              </div>
+
+              <div className="linkedInfoMeta">
+                <span>ID plan : {selectedPlanData.id_plan ?? "-"}</span>
+              </div>
+
+              <button
+                type="button"
+                className="secondaryButton"
+                onClick={handleOpenPlan}
+              >
+                Ouvrir le plan
+              </button>
+            </div>
           )}
         </section>
 

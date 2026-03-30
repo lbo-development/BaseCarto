@@ -41,6 +41,31 @@ app.get("/api/sites", async (req, res) => {
   }
 });
 
+app.get("/api/plans", async (req, res) => {
+  try {
+    const { siteId } = req.query;
+
+    if (!siteId) {
+      return res.status(400).json({ error: "siteId manquant" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id_plan, lib_plan, id_site
+      FROM db_plans
+      WHERE id_site = $1
+      ORDER BY lib_plan
+      `,
+      [siteId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Erreur /api/plans :", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
