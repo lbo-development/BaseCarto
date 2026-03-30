@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import {
   MapContainer,
@@ -21,6 +21,20 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+function FixMapSizeOnLoad() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+}
 
 function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   const map = useMap();
@@ -45,31 +59,10 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
           console.error("Erreur fitBounds :", error);
         }
       }
-    }, 300);
+    }, 100);
 
     return () => clearTimeout(timer);
   }, [map, isMenuOpen, isDesktop, openedPlan]);
-
-  return null;
-}
-
-function MapUpdater({ center, zoom, siteKey }) {
-  const map = useMap();
-  const lastSiteKeyRef = useRef(null);
-
-  useEffect(() => {
-    if (!siteKey) return;
-
-    if (lastSiteKeyRef.current !== siteKey) {
-      const timer = setTimeout(() => {
-        map.invalidateSize();
-        map.setView(center, zoom, { animate: false });
-      }, 50);
-
-      lastSiteKeyRef.current = siteKey;
-      return () => clearTimeout(timer);
-    }
-  }, [map, center, zoom, siteKey]);
 
   return null;
 }
@@ -86,17 +79,13 @@ function MapView({
   const zoomValue = Number(selectedSiteData?.zoom);
 
   const hasValidCoords =
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
+    !Number.isNaN(latitude) &&
+    !Number.isNaN(longitude) &&
     latitude !== 0 &&
     longitude !== 0;
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
-
-  const initialZoom =
-    Number.isFinite(zoomValue) && zoomValue > 0
-      ? Math.min(Math.max(zoomValue, 3), 15)
-      : 12;
+  const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
 
   const tileConfig =
     baseLayer === "satellite"
@@ -108,8 +97,6 @@ function MapView({
           attribution: "&copy; OpenStreetMap contributors",
           url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         };
-
-  const siteKey = String(selectedSiteData?.id_site ?? "default");
 
   return (
     <div className="mapContainer geoMapContainer">
@@ -147,14 +134,14 @@ function MapView({
 
       <MapContainer
         center={center}
-        zoom={initialZoom}
+        zoom={zoom}
         minZoom={3}
         maxZoom={19}
         className="leafletMap"
       >
         <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
 
-        <MapUpdater center={center} zoom={initialZoom} siteKey={siteKey} />
+        <FixMapSizeOnLoad />
         <ResizeMap
           isMenuOpen={isMenuOpen}
           isDesktop={isDesktop}
@@ -181,8 +168,8 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
 
   const hasValidPlan =
     selectedPlanData?.fichier_plan &&
-    Number.isFinite(width) &&
-    Number.isFinite(height) &&
+    !Number.isNaN(width) &&
+    !Number.isNaN(height) &&
     width > 0 &&
     height > 0;
 
@@ -383,7 +370,7 @@ export default function App() {
 
   const handleCenterOnSite = () => {
     if (!selectedSiteData) return;
-    setOpenedPlan(null);
+    console.log("Centrer sur le site :", selectedSiteData);
   };
 
   const handleShowDocuments = () => {
