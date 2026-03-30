@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import {
   MapContainer,
@@ -32,6 +32,27 @@ function FixMapSizeOnLoad() {
 
     return () => clearTimeout(timer);
   }, [map]);
+
+  return null;
+}
+
+function RecenterMapOnSiteChange({ center, zoom, siteId }) {
+  const map = useMap();
+  const previousSiteId = useRef(null);
+
+  useEffect(() => {
+    if (!siteId) return;
+
+    if (previousSiteId.current !== siteId) {
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        map.setView(center, zoom, { animate: false });
+      }, 150);
+
+      previousSiteId.current = siteId;
+      return () => clearTimeout(timer);
+    }
+  }, [map, center, zoom, siteId]);
 
   return null;
 }
@@ -79,13 +100,14 @@ function MapView({
   const zoomValue = Number(selectedSiteData?.zoom);
 
   const hasValidCoords =
-    !Number.isNaN(latitude) &&
-    !Number.isNaN(longitude) &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
     latitude !== 0 &&
     longitude !== 0;
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
-  const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
+  const zoom = Number.isFinite(zoomValue) && zoomValue > 0 ? zoomValue : 12;
+  const siteId = String(selectedSiteData?.id_site ?? "");
 
   const tileConfig =
     baseLayer === "satellite"
@@ -142,6 +164,7 @@ function MapView({
         <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
 
         <FixMapSizeOnLoad />
+        <RecenterMapOnSiteChange center={center} zoom={zoom} siteId={siteId} />
         <ResizeMap
           isMenuOpen={isMenuOpen}
           isDesktop={isDesktop}
@@ -362,6 +385,7 @@ export default function App() {
 
   const handleSelectSite = (event) => {
     setSelectedSite(event.target.value);
+    setOpenedPlan(null);
   };
 
   const handleSelectPlan = (event) => {
@@ -370,7 +394,7 @@ export default function App() {
 
   const handleCenterOnSite = () => {
     if (!selectedSiteData) return;
-    console.log("Centrer sur le site :", selectedSiteData);
+    setOpenedPlan(null);
   };
 
   const handleShowDocuments = () => {
