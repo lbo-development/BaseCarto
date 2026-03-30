@@ -86,6 +86,9 @@ select {
   cursor: pointer;
   font-size: 22px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* LAYOUT */
@@ -104,6 +107,7 @@ select {
   min-height: 0;
   position: relative;
   z-index: 1;
+  transition: margin-left 0.28s ease;
 }
 
 .mapContainer {
@@ -209,6 +213,7 @@ select {
   cursor: pointer;
   font-size: 18px;
   color: #1f2937;
+  flex-shrink: 0;
 }
 
 .menuScroll {
@@ -399,129 +404,8 @@ select {
   color: #b42318;
 }
 
-/* MOBILE */
+/* PLAN */
 
-.mobileMenu {
-  position: fixed;
-  top: 64px;
-  left: 0;
-  bottom: 0;
-  width: min(88vw, 360px);
-  z-index: 40;
-  box-shadow: 12px 0 32px rgba(15, 23, 42, 0.18);
-  border-top-right-radius: 20px;
-  transform: translateX(-100%);
-  transition: transform 0.28s ease;
-}
-
-.mobileMenu.open {
-  transform: translateX(0);
-}
-
-.mobileMenu.closed {
-  transform: translateX(-100%);
-}
-
-.menuOverlay {
-  position: fixed;
-  inset: 64px 0 0 0;
-  background: rgba(7, 14, 28, 0.38);
-  backdrop-filter: blur(2px);
-  z-index: 35;
-}
-
-/* DESKTOP */
-
-@media (min-width: 1024px) {
-  .hamburgerButton {
-    display: none;
-  }
-
-  .topBar {
-    grid-template-columns: 1fr auto;
-    padding: 0 20px;
-  }
-
-  .topBarTitle {
-    font-size: 20px;
-  }
-
-  .selectedChip {
-    max-width: 260px;
-  }
-
-  .desktopMenu {
-    position: relative;
-    width: 360px;
-    min-width: 360px;
-    max-width: 360px;
-    height: 100%;
-    z-index: 2;
-    border-right: 1px solid #e7edf5;
-    box-shadow: 8px 0 24px rgba(15, 23, 42, 0.05);
-    transform: translateX(0);
-    transition:
-      width 0.28s ease,
-      min-width 0.28s ease,
-      max-width 0.28s ease;
-  }
-
-  .desktopMenu.closed {
-    width: 0;
-    min-width: 0;
-    max-width: 0;
-    border-right: none;
-    box-shadow: none;
-  }
-
-  .desktopMenu.closed .menuHeader,
-  .desktopMenu.closed .menuScroll {
-    display: none;
-  }
-
-  .mapPlaceholder {
-    padding: 28px;
-  }
-
-  .mapCard {
-    padding: 26px;
-  }
-}
-.linkedInfoCard {
-  margin-top: 12px;
-  padding: 14px;
-  border: 1px solid #e7edf5;
-  border-radius: 14px;
-  background: #f8fbff;
-}
-
-.linkedInfoTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #172033;
-  margin-bottom: 6px;
-}
-
-.linkedInfoMeta {
-  font-size: 12px;
-  color: #667085;
-  margin-bottom: 12px;
-}
-
-.secondaryButton {
-  width: 100%;
-  min-height: 42px;
-  border: 1px solid #d8e1ec;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #172033;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.secondaryButton:hover {
-  background: #f4f8fd;
-}
 .linkedInfoCard {
   margin-top: 12px;
   padding: 14px;
@@ -595,6 +479,98 @@ select {
   word-break: break-word;
 }
 
+.planCloseButton {
+  width: auto;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
 .planFallback {
   padding: 16px;
+}
+
+/* MOBILE */
+
+.mobileMenu {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  width: min(88vw, 360px);
+  z-index: 40;
+  box-shadow: 12px 0 32px rgba(15, 23, 42, 0.18);
+  border-top-right-radius: 20px;
+  transform: translateX(-100%);
+  transition: transform 0.28s ease;
+}
+
+.mobileMenu.open {
+  transform: translateX(0);
+}
+
+.mobileMenu.closed {
+  transform: translateX(-100%);
+}
+
+.menuOverlay {
+  position: fixed;
+  inset: 64px 0 0 0;
+  background: rgba(7, 14, 28, 0.38);
+  backdrop-filter: blur(2px);
+  z-index: 35;
+}
+
+/* DESKTOP */
+
+@media (min-width: 1024px) {
+  .topBar {
+    grid-template-columns: 56px 1fr auto;
+    padding: 0 20px;
+  }
+
+  .topBarTitle {
+    font-size: 20px;
+  }
+
+  .selectedChip {
+    max-width: 260px;
+  }
+
+  .desktopMenu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 360px;
+    z-index: 25;
+    border-right: 1px solid #e7edf5;
+    box-shadow: 12px 0 28px rgba(15, 23, 42, 0.12);
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    transform: translateX(-100%);
+    transition:
+      transform 0.28s ease,
+      box-shadow 0.28s ease;
+  }
+
+  .desktopMenu.open {
+    transform: translateX(0);
+  }
+
+  .desktopMenu.closed {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .contentShell.desktopMenuVisible .appMain {
+    margin-left: 360px;
+  }
+
+  .mapPlaceholder {
+    padding: 28px;
+  }
+
+  .mapCard {
+    padding: 26px;
+  }
 }

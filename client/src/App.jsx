@@ -32,16 +32,32 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-function ResizeMap({ isMenuOpen, isDesktop }) {
+function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   const map = useMap();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       map.invalidateSize();
+      if (openedPlan && map.fitBounds) {
+        try {
+          map.fitBounds(
+            [
+              [0, 0],
+              [
+                Number(openedPlan.height_plan || 0),
+                Number(openedPlan.width_plan || 0),
+              ],
+            ],
+            { padding: [20, 20] }
+          );
+        } catch (error) {
+          console.error("Erreur fitBounds :", error);
+        }
+      }
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [map, isMenuOpen, isDesktop]);
+  }, [map, isMenuOpen, isDesktop, openedPlan]);
 
   return null;
 }
@@ -69,7 +85,11 @@ function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
         />
 
         <ChangeView center={center} zoom={zoom} />
-        <ResizeMap isMenuOpen={isMenuOpen} isDesktop={isDesktop} />
+        <ResizeMap
+          isMenuOpen={isMenuOpen}
+          isDesktop={isDesktop}
+          openedPlan={null}
+        />
 
         {hasValidCoords && (
           <Marker position={[latitude, longitude]}>
@@ -121,7 +141,11 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
           </div>
         </div>
 
-        <button type="button" className="secondaryButton" onClick={onClosePlan}>
+        <button
+          type="button"
+          className="secondaryButton planCloseButton"
+          onClick={onClosePlan}
+        >
           Fermer le plan
         </button>
       </div>
@@ -137,7 +161,11 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
           style={{ background: "#f1f5f9" }}
         >
           <ImageOverlay url={imageUrl} bounds={bounds} />
-          <ResizeMap isMenuOpen={isMenuOpen} isDesktop={isDesktop} />
+          <ResizeMap
+            isMenuOpen={isMenuOpen}
+            isDesktop={isDesktop}
+            openedPlan={selectedPlanData}
+          />
         </MapContainer>
       </div>
     </div>
@@ -145,7 +173,7 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
 }
 
 export default function App() {
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
   const [sites, setSites] = useState([]);
@@ -163,13 +191,10 @@ export default function App() {
     const media = window.matchMedia("(min-width: 1024px)");
 
     const updateLayoutMode = (event) => {
-      const desktop = event.matches;
-      setIsDesktop(desktop);
-      setIsMenuOpen(desktop);
+      setIsDesktop(event.matches);
     };
 
     setIsDesktop(media.matches);
-    setIsMenuOpen(media.matches);
 
     media.addEventListener("change", updateLayoutMode);
     return () => media.removeEventListener("change", updateLayoutMode);
@@ -323,16 +348,14 @@ export default function App() {
           </div>
         </div>
 
-        {!isDesktop && (
-          <button
-            type="button"
-            className="iconButton"
-            onClick={() => setIsMenuOpen(false)}
-            aria-label="Fermer le menu"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          type="button"
+          className="iconButton"
+          onClick={() => setIsMenuOpen(false)}
+          aria-label="Fermer le menu"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="menuScroll">
@@ -528,8 +551,8 @@ export default function App() {
         <button
           type="button"
           className="hamburgerButton"
-          onClick={() => setIsMenuOpen(true)}
-          aria-label="Ouvrir le menu"
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
         >
           ☰
         </button>
@@ -547,7 +570,12 @@ export default function App() {
         </div>
       </header>
 
-      <div className="contentShell">
+      <div
+        className={[
+          "contentShell",
+          isDesktop && isMenuOpen ? "desktopMenuVisible" : "",
+        ].join(" ")}
+      >
         <aside
           className={[
             "sideMenu",
