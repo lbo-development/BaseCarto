@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  ImageOverlay,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -74,6 +81,69 @@ function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
   );
 }
 
+function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
+  const apiUrl = import.meta.env.VITE_API_URL || "";
+
+  const width = Number(selectedPlanData?.width_plan);
+  const height = Number(selectedPlanData?.height_plan);
+  const minZoom = Number(selectedPlanData?.min_zoom ?? -2);
+  const maxZoom = Number(selectedPlanData?.max_zoom ?? 4);
+
+  const hasValidPlan =
+    selectedPlanData?.fichier_plan &&
+    !Number.isNaN(width) &&
+    !Number.isNaN(height) &&
+    width > 0 &&
+    height > 0;
+
+  if (!hasValidPlan) {
+    return (
+      <div className="planFallback">
+        <div className="infoBox error">Plan invalide ou incomplet.</div>
+      </div>
+    );
+  }
+
+  const imageUrl = `${apiUrl}/uploads/plans/${selectedPlanData.fichier_plan}`;
+  const bounds = [
+    [0, 0],
+    [height, width],
+  ];
+
+  return (
+    <div className="planWrapper">
+      <div className="planToolbar">
+        <div className="planTitleBlock">
+          <div className="planTitle">{selectedPlanData.lib_plan ?? "Plan"}</div>
+          <div className="planSubtitle">
+            {selectedPlanData.fichier_plan} • {Math.round(width)} ×{" "}
+            {Math.round(height)}
+          </div>
+        </div>
+
+        <button type="button" className="secondaryButton" onClick={onClosePlan}>
+          Fermer le plan
+        </button>
+      </div>
+
+      <div className="mapContainer">
+        <MapContainer
+          crs={L.CRS.Simple}
+          bounds={bounds}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
+          zoom={minZoom}
+          className="leafletMap"
+          style={{ background: "#f1f5f9" }}
+        >
+          <ImageOverlay url={imageUrl} bounds={bounds} />
+          <ResizeMap isMenuOpen={isMenuOpen} isDesktop={isDesktop} />
+        </MapContainer>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -87,6 +157,7 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [errorPlans, setErrorPlans] = useState("");
+  const [openedPlan, setOpenedPlan] = useState(null);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -146,6 +217,7 @@ export default function App() {
       if (!selectedSite) {
         setPlans([]);
         setSelectedPlan("");
+        setOpenedPlan(null);
         setErrorPlans("");
         setLoadingPlans(false);
         return;
@@ -156,6 +228,7 @@ export default function App() {
         setErrorPlans("");
         setPlans([]);
         setSelectedPlan("");
+        setOpenedPlan(null);
 
         const apiUrl = import.meta.env.VITE_API_URL || "";
         const response = await fetch(
@@ -172,12 +245,11 @@ export default function App() {
         setPlans(normalizedPlans);
 
         if (normalizedPlans.length > 0) {
-          const firstPlanId = String(normalizedPlans[0]?.id_plan ?? "");
-          setSelectedPlan(firstPlanId);
+          setSelectedPlan(String(normalizedPlans[0]?.id_plan ?? ""));
         }
       } catch (error) {
         console.error("Erreur chargement des plans :", error);
-        setErrorPlans("Impossible de charger les plans du site.");
+        setErrorPlans("Impossible de charger les plans.");
         setPlans([]);
         setSelectedPlan("");
       } finally {
@@ -207,10 +279,6 @@ export default function App() {
   const handleSelectSite = (event) => {
     const value = event.target.value;
     setSelectedSite(value);
-
-    if (!isDesktop) {
-      setIsMenuOpen(false);
-    }
   };
 
   const handleSelectPlan = (event) => {
@@ -233,7 +301,15 @@ export default function App() {
 
   const handleOpenPlan = () => {
     if (!selectedPlanData) return;
-    console.log("Ouvrir le plan :", selectedPlanData);
+    setOpenedPlan(selectedPlanData);
+
+    if (!isDesktop) {
+      setIsMenuOpen(false);
+    }
+  };
+
+  const handleClosePlan = () => {
+    setOpenedPlan(null);
   };
 
   const menuContent = () => (
@@ -323,37 +399,21 @@ export default function App() {
               {plans.length === 0 ? (
                 <option value="">Aucun plan disponible</option>
               ) : (
-                plans.map((plan) => {
-                  const id = String(plan.id_plan ?? "");
-                  const nom =
-                    plan.lib_plan ??
-                    plan.nom_plan ??
-                    plan.titre_plan ??
-                    `Plan ${id}`;
-
-                  return (
-                    <option key={id} value={id}>
-                      {nom}
-                    </option>
-                  );
-                })
+                plans.map((plan) => (
+                  <option key={plan.id_plan} value={plan.id_plan}>
+                    {plan.lib_plan}
+                  </option>
+                ))
               )}
             </select>
           )}
 
           {selectedPlanData && (
             <div className="linkedInfoCard">
-              <div className="linkedInfoTitle">
-                {selectedPlanData.lib_plan ??
-                  selectedPlanData.nom_plan ??
-                  selectedPlanData.titre_plan ??
-                  "Plan sélectionné"}
-              </div>
-
+              <div className="linkedInfoTitle">{selectedPlanData.lib_plan}</div>
               <div className="linkedInfoMeta">
-                <span>ID plan : {selectedPlanData.id_plan ?? "-"}</span>
+                {selectedPlanData.fichier_plan}
               </div>
-
               <button
                 type="button"
                 className="secondaryButton"
@@ -477,7 +537,9 @@ export default function App() {
         <div className="topBarTitle">BaseCarto</div>
 
         <div className="topBarRight">
-          {selectedSiteData ? (
+          {openedPlan ? (
+            <span className="selectedChip">{openedPlan.lib_plan}</span>
+          ) : selectedSiteData ? (
             <span className="selectedChip">{selectedSiteData.lib_site}</span>
           ) : (
             <span className="selectedChip muted">Aucun site</span>
@@ -497,11 +559,20 @@ export default function App() {
         </aside>
 
         <main className="appMain">
-          <MapView
-            selectedSiteData={selectedSiteData}
-            isMenuOpen={isMenuOpen}
-            isDesktop={isDesktop}
-          />
+          {openedPlan ? (
+            <PlanView
+              selectedPlanData={openedPlan}
+              isMenuOpen={isMenuOpen}
+              isDesktop={isDesktop}
+              onClosePlan={handleClosePlan}
+            />
+          ) : (
+            <MapView
+              selectedSiteData={selectedSiteData}
+              isMenuOpen={isMenuOpen}
+              isDesktop={isDesktop}
+            />
+          )}
         </main>
       </div>
 
