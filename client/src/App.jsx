@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import {
   MapContainer,
@@ -21,16 +21,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-
-function ChangeView({ center, zoom }) {
-  const map = useMap();
-
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-
-  return null;
-}
 
 function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   const map = useMap();
@@ -63,6 +53,22 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   return null;
 }
 
+function MapUpdater({ center, zoom, siteKey }) {
+  const map = useMap();
+  const lastSiteKeyRef = useRef(null);
+
+  useEffect(() => {
+    if (!siteKey) return;
+
+    if (lastSiteKeyRef.current !== siteKey) {
+      map.setView(center, zoom, { animate: true });
+      lastSiteKeyRef.current = siteKey;
+    }
+  }, [map, center, zoom, siteKey]);
+
+  return null;
+}
+
 function MapView({
   selectedSiteData,
   isMenuOpen,
@@ -75,13 +81,17 @@ function MapView({
   const zoomValue = Number(selectedSiteData?.zoom);
 
   const hasValidCoords =
-    !Number.isNaN(latitude) &&
-    !Number.isNaN(longitude) &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
     latitude !== 0 &&
     longitude !== 0;
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
-  const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
+
+  const initialZoom =
+    Number.isFinite(zoomValue) && zoomValue > 0
+      ? Math.min(Math.max(zoomValue, 3), 19)
+      : 12;
 
   const tileConfig =
     baseLayer === "satellite"
@@ -94,6 +104,8 @@ function MapView({
           url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         };
 
+  const siteKey = String(selectedSiteData?.id_site ?? "default");
+
   return (
     <div className="mapContainer geoMapContainer">
       <div className="mapFloatingControls">
@@ -104,9 +116,7 @@ function MapView({
         >
           <button
             type="button"
-            className={`previewLayerButton ${
-              baseLayer === "map" ? "active" : ""
-            }`}
+            className={`previewLayerButton ${baseLayer === "map" ? "active" : ""}`}
             onClick={() => setBaseLayer("map")}
             aria-pressed={baseLayer === "map"}
           >
@@ -128,10 +138,16 @@ function MapView({
         </div>
       </div>
 
-      <MapContainer center={center} zoom={zoom} className="leafletMap">
+      <MapContainer
+        center={center}
+        zoom={initialZoom}
+        minZoom={3}
+        maxZoom={19}
+        className="leafletMap"
+      >
         <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
 
-        <ChangeView center={center} zoom={zoom} />
+        <MapUpdater center={center} zoom={initialZoom} siteKey={siteKey} />
         <ResizeMap
           isMenuOpen={isMenuOpen}
           isDesktop={isDesktop}
@@ -158,8 +174,8 @@ function PlanView({ selectedPlanData, isMenuOpen, isDesktop, onClosePlan }) {
 
   const hasValidPlan =
     selectedPlanData?.fichier_plan &&
-    !Number.isNaN(width) &&
-    !Number.isNaN(height) &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
     width > 0 &&
     height > 0;
 
@@ -360,6 +376,7 @@ export default function App() {
 
   const handleCenterOnSite = () => {
     if (!selectedSiteData) return;
+    setOpenedPlan(null);
     console.log("Centrer sur le site :", selectedSiteData);
   };
 
