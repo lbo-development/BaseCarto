@@ -59,10 +59,20 @@ app.get("/api/plans", async (req, res) => {
 
     const result = await pool.query(
       `
-      SELECT id_plan, lib_plan, id_site
+      SELECT
+        id,
+        id_plan,
+        lib_plan,
+        ordre,
+        id_site,
+        fichier_plan,
+        height_plan,
+        width_plan,
+        min_zoom,
+        max_zoom
       FROM db_plans
       WHERE id_site = $1
-      ORDER BY lib_plan
+      ORDER BY ordre ASC, lib_plan ASC
       `,
       [siteId]
     );
