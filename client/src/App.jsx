@@ -90,7 +90,7 @@ function MapView({
 
   const initialZoom =
     Number.isFinite(zoomValue) && zoomValue > 0
-      ? Math.min(Math.max(zoomValue, 3), 19)
+      ? Math.min(Math.max(zoomValue, 3), 15)
       : 12;
 
   const tileConfig =
