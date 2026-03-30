@@ -62,7 +62,13 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   return null;
 }
 
-function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
+function MapView({
+  selectedSiteData,
+  isMenuOpen,
+  isDesktop,
+  baseLayer,
+  setBaseLayer,
+}) {
   const latitude = Number(selectedSiteData?.latitude);
   const longitude = Number(selectedSiteData?.longitude);
   const zoomValue = Number(selectedSiteData?.zoom);
@@ -76,13 +82,53 @@ function MapView({ selectedSiteData, isMenuOpen, isDesktop }) {
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
   const zoom = !Number.isNaN(zoomValue) && zoomValue > 0 ? zoomValue : 12;
 
+  const tileConfig =
+    baseLayer === "satellite"
+      ? {
+          attribution: "Tiles &copy; Esri",
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        }
+      : {
+          attribution: "&copy; OpenStreetMap contributors",
+          url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        };
+
   return (
-    <div className="mapContainer">
+    <div className="mapContainer geoMapContainer">
+      <div className="mapFloatingControls">
+        <div
+          className="mapPreviewSwitch"
+          role="group"
+          aria-label="Fond de carte"
+        >
+          <button
+            type="button"
+            className={`previewLayerButton ${
+              baseLayer === "map" ? "active" : ""
+            }`}
+            onClick={() => setBaseLayer("map")}
+            aria-pressed={baseLayer === "map"}
+          >
+            <span className="previewThumb previewThumbMap" />
+            <span className="previewLabel">Carte</span>
+          </button>
+
+          <button
+            type="button"
+            className={`previewLayerButton ${
+              baseLayer === "satellite" ? "active" : ""
+            }`}
+            onClick={() => setBaseLayer("satellite")}
+            aria-pressed={baseLayer === "satellite"}
+          >
+            <span className="previewThumb previewThumbSatellite" />
+            <span className="previewLabel">Satellite</span>
+          </button>
+        </div>
+      </div>
+
       <MapContainer center={center} zoom={zoom} className="leafletMap">
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer attribution={tileConfig.attribution} url={tileConfig.url} />
 
         <ChangeView center={center} zoom={zoom} />
         <ResizeMap
