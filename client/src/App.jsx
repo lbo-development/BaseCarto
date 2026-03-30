@@ -85,7 +85,9 @@ function MapView({
     longitude !== 0;
 
   const center = hasValidCoords ? [latitude, longitude] : [43.2965, 5.3698];
-  const zoom = Number.isFinite(zoomValue) && zoomValue > 0 ? zoomValue : 12;
+  const zoom =
+    Number.isFinite(zoomValue) && zoomValue > 0 ? Math.min(zoomValue, 18) : 12;
+
   const siteId = String(selectedSiteData?.id_site ?? "default");
 
   const tileConfig =
@@ -138,7 +140,7 @@ function MapView({
         center={center}
         zoom={zoom}
         minZoom={3}
-        maxZoom={19}
+        maxZoom={18}
         className="leafletMap"
         whenReady={(event) => {
           setTimeout(() => {
