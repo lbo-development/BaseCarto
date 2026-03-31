@@ -67,6 +67,41 @@ function ResizeMap({ isMenuOpen, isDesktop, openedPlan }) {
   return null;
 }
 
+function Toast({ toast, onClose }) {
+  if (!toast) return null;
+  const toastType = ["info", "warning", "error"].includes(toast.type)
+    ? toast.type
+    : "info";
+
+  return (
+    <div
+      className={`toast toast-${toastType}`}
+      role="status"
+      aria-live="polite"
+    >
+      <span>{toast.message}</span>
+      <button
+        type="button"
+        className="toastClose"
+        onClick={onClose}
+        aria-label="Fermer la notification"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function LoadingSkeleton({ lines = 3 }) {
+  return (
+    <div className="skeletonWrap" aria-live="polite" aria-busy="true">
+      {Array.from({ length: lines }).map((_, index) => (
+        <span key={index} className="skeletonLine" />
+      ))}
+    </div>
+  );
+}
+
 function MapView({
   selectedSiteData,
   isMenuOpen,
@@ -262,6 +297,14 @@ export default function App() {
   const [openedPlan, setOpenedPlan] = useState(null);
 
   const [baseLayer, setBaseLayer] = useState("map");
+  const [toast, setToast] = useState(null);
+  const showToast = (type, message) => setToast({ type, message });
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -299,12 +342,14 @@ export default function App() {
           setSelectedSite(firstId);
         } else {
           setSelectedSite("");
+          showToast("warning", "Aucun site disponible pour le moment.");
         }
       } catch (error) {
         console.error("Erreur chargement des sites :", error);
         setErrorSites("Impossible de charger les sites.");
         setSites([]);
         setSelectedSite("");
+        showToast("error", "Échec du chargement des sites.");
       } finally {
         setLoadingSites(false);
       }
@@ -353,6 +398,7 @@ export default function App() {
         setErrorPlans("Impossible de charger les plans.");
         setPlans([]);
         setSelectedPlan("");
+        showToast("error", "Échec du chargement des plans.");
       } finally {
         setLoadingPlans(false);
       }
@@ -390,15 +436,18 @@ export default function App() {
     if (!selectedSiteData) return;
     setOpenedPlan(null);
     setSelectedSite(String(selectedSiteData.id_site));
+    showToast("info", "Carte recentrée sur le site.");
   };
 
   const handleShowDocuments = () => {
     if (!selectedSiteData) return;
     console.log("Afficher documents du site :", selectedSiteData);
+    showToast("info", "Module Documents à connecter (Sprint 2).");
   };
 
   const handleShowLayers = () => {
     console.log("Afficher / masquer les couches");
+    showToast("info", "Panneau Couches à connecter (Sprint 2).");
   };
 
   const handleOpenPlan = () => {
@@ -446,9 +495,11 @@ export default function App() {
           </label>
 
           {loadingSites ? (
-            <div className="infoBox">Chargement des sites...</div>
+            <LoadingSkeleton lines={2} />
           ) : errorSites ? (
-            <div className="infoBox error">{errorSites}</div>
+            <div className="infoBox error" role="alert">
+              {errorSites}
+            </div>
           ) : (
             <select
               id="site-select"
@@ -485,9 +536,11 @@ export default function App() {
           {!selectedSite ? (
             <div className="infoBox">Sélectionne d'abord un site.</div>
           ) : loadingPlans ? (
-            <div className="infoBox">Chargement des plans...</div>
+            <LoadingSkeleton lines={2} />
           ) : errorPlans ? (
-            <div className="infoBox error">{errorPlans}</div>
+            <div className="infoBox error" role="alert">
+              {errorPlans}
+            </div>
           ) : (
             <select
               id="plan-select"
@@ -686,6 +739,8 @@ export default function App() {
       {!isDesktop && isMenuOpen && (
         <div className="menuOverlay" onClick={() => setIsMenuOpen(false)} />
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
